@@ -20,3 +20,49 @@
 | **Pick when…** | You need max performance for GPU clusters and have budget | You want flexibility and will operate it yourself | You want cheapest POSIX-on-cloud and tolerate latency | You want boring reliability for enterprise mixed workloads |
 
 > Cost figures are rough public-list estimates as of early 2026; real procurement is negotiable and street price often runs 30–50% below list.
+
+## S3 Support: WEKA vs MinIO
+
+MinIO is an S3-first object store; WEKA is a parallel filesystem with a native S3 protocol head. Both speak S3, but the architecture, performance envelope, and operational model are very different.
+
+| Dimension | **WEKA S3** | **MinIO** |
+|---|---|---|
+| **Product identity** | Parallel filesystem (WekaFS) with S3 as one of many protocol heads | Pure S3-compatible object store |
+| **S3 implementation** | Native protocol service running on WEKA cluster nodes; not a gateway | Native S3 server; the only protocol it speaks |
+| **Backing store** | WekaFS distributed namespace on NVMe, with optional tier to external object store | Erasure-coded shards written directly to local drives (typically XFS on JBOD) |
+| **Unified file + object** | ✅ Same bytes accessible via POSIX/NFS/SMB **and** S3 simultaneously | ❌ S3 only (KV-on-XFS internally; no POSIX view) |
+| **S3 API coverage** | Core API, multipart, versioning, lifecycle, Object Lock/WORM, IAM-style policies, presigned URLs, audit logs, tagging, CORS | Broad S3 parity: SigV4, multipart, versioning, lifecycle, Object Lock, replication (site/bucket), notifications, STS, bucket policies, SSE-KMS via KES |
+| **Multi-site replication** | Via underlying WekaFS snap-to-object / external orchestration | First-class active-active and active-passive bucket replication |
+| **Encryption** | At-rest via WEKA; SSE on S3 path | SSE-S3, SSE-C, SSE-KMS via KES; per-bucket keys |
+| **Bit-rot detection / repair** | WekaFS distributed data protection (N+2/N+4) + scrubbing | HighwayHash per shard + erasure coding; `mc admin heal`; background scanner (probabilistic, e.g. `healObjectSelectProb`) |
+| **Small-object latency** | Sub-ms to low-ms; designed for billions of small files | Few ms on NVMe, higher on HDD; inline-data optimization for objects under ~128 KiB |
+| **Small-object IOPS at scale** | Excellent — metadata service is the architectural focus | Good but bounded by erasure-set fan-out (N×metadata writes per PUT) |
+| **Large-object throughput** | Excellent on NVMe + RDMA | Excellent — saturates NICs and disks easily; well-tuned for large parallel transfers |
+| **Listing / scanning huge buckets** | Fast — FS-style metadata indexing | Improving each release; very large flat namespaces still costlier than WEKA |
+| **Hardware profile** | NVMe-heavy, often 100 GbE / InfiniBand, kernel-bypass (DPDK) | Commodity gear; HDD or SSD; standard Ethernet |
+| **Deployment model** | Appliance or software on certified servers; cloud marketplace images | Single static binary; runs anywhere — bare metal, VM, container, K8s |
+| **Kubernetes / cloud-native** | CSI driver; cloud marketplace deploys | First-class K8s operator; Helm charts; common on EKS/GKE/AKS and on-prem K8s |
+| **Tiering to external object store** | Built-in cold tier to AWS S3 / Azure Blob / GCS / S3-compatible (incl. MinIO itself) | ILM tiering to AWS S3 / Azure / GCS / other MinIO clusters |
+| **License** | Proprietary, subscription per usable TB | Open source (AGPLv3) + commercial (Enterprise / SUBNET) |
+| **Per-TB cost (rough)** | ~$80–200/TB/yr software + ~$100–250/TB raw NVMe | $0 software (community); commercial subscription tiered; commodity HDD/SSD ~$20–80/TB raw |
+| **Operational model** | Vendor-supported, managed-feel | Self-operate (community) or vendor-supported (Enterprise) |
+| **Lock-in** | High — proprietary FS format | Low — standard S3 API; data is bog-standard erasure-coded files on XFS |
+| **Best fit** | AI/ML training, HPC, mixed POSIX+S3 pipelines, latency-sensitive small-file workloads | Cloud-native S3 workloads, data lakes, backups, K8s app storage, log/event archives |
+| **Pick when…** | You need NVMe-class S3 latency and the *same data* via POSIX for GPU dataloaders | You want an open, portable, S3-first object store on commodity hardware |
+
+### When WEKA's S3 is worth the premium
+
+- Millions of tiny objects/sec with P99 latency requirements (AI training, feature stores)
+- Workloads that need POSIX *and* S3 on the same dataset without copies
+- GPU clusters where dataloaders prefer files but pipelines write objects
+
+### When MinIO is the right call
+
+- Pure S3 workload — no POSIX requirement
+- Open source and portability matter (run identically on laptop, K8s, bare metal, any cloud)
+- Cost-sensitive deployments on commodity HDD/SSD
+- Throughput-bound rather than small-object latency-bound
+
+### TL;DR
+
+Both are valid S3 endpoints. **WEKA wins on small-object latency and unified file+object access**; **MinIO wins on openness, portability, and cost on commodity hardware**. They're often complementary — WEKA hot tier in front, MinIO cold tier behind.
