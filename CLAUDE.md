@@ -43,7 +43,7 @@ Rules for the table:
 
 After the table, write the long-form section. This is where senior engineers actually learn the technology. Cover the relevant subset of the following — skip sections that do not apply to the domain rather than padding:
 
-1. **Architecture deep-dive** — components, data path, control path, where state lives, what runs on the hot path vs. background. Use a small ASCII or Mermaid diagram when it clarifies.
+1. **Architecture deep-dive** — components, data path, control path, where state lives, what runs on the hot path vs. background. Use a small Mermaid diagram when it clarifies. **All diagrams in reports must use Mermaid format** (fenced ```mermaid blocks); do not use ASCII art, image embeds, or other diagram syntaxes.
 2. **Key design patterns and trade-offs** — the non-obvious engineering decisions and *why* they were made. Name the alternatives that chose differently and explain the trade-off.
 3. **Correctness / consistency / accuracy model** — for storage: durability, consistency, failure domains, behavior on node loss / partition / disk failure. For AI: numerical precision, determinism, eval methodology, accuracy regressions vs. reference.
 4. **Performance characteristics** — for storage: small vs. large I/O, metadata-heavy workloads, tail latency, scaling cliffs. For AI: throughput, latency (TTFT, ITL, end-to-end), batch behavior, KV cache efficiency, scaling behavior across GPUs/nodes. Cite published numbers when possible and label them as such.
@@ -53,6 +53,10 @@ After the table, write the long-form section. This is where senior engineers act
 8. **Sub-comparisons where useful** — when one head-to-head deserves its own table (a specific protocol, feature, or workload), add a scoped second table.
 9. **When to pick it / when not to** — bulleted decision criteria. Be specific about workload shape, scale, team size, and budget.
 10. **Closing TL;DR** — one short paragraph a reader can quote in a design doc.
+
+### 4. Sources
+
+End every report with a `## Sources` section listing every web reference consulted during research — primary docs, vendor pages, papers, benchmarks, blog posts, and any URL whose claim or number you cited. Format each entry as `- [Title](URL) — accessed <YYYY-MM>`. The list is mandatory even when the body already cites sources inline; the trailing section gives the reader a single place to verify provenance and to re-run the research as the technology evolves. If a source contributed nothing to the final report, drop it; this is not a search log.
 
 ## Writing Standards
 
@@ -92,6 +96,6 @@ Always **research the web first, then think, then write.** Do not write a report
    - Where is the **information stale or contested** across sources? Flag that explicitly in the report rather than picking one and hiding the disagreement.
    Use extended thinking for non-trivial subjects.
 
-4. **Draft.** Write the report in the three-part structure above. Never skip the summary or the table. Cite version and date for any factual claim that could go stale.
+4. **Draft.** Write the report in the three-part structure above. Never skip the summary, the table, or the trailing `## Sources` section. Cite version and date for any factual claim that could go stale.
 
 5. **Save** to the appropriate `<area>/<tech_name>.md` path.
