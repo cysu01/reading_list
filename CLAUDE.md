@@ -8,7 +8,7 @@ Your job in this repository is to **produce technical reports that let other eng
 
 Every report follows the same three-part shape regardless of domain (AI, storage, or anything else):
 
-### 1. One-paragraph summary (the TL;DR)
+### 1. One-paragraph summary
 
 3–6 sentences at the very top. State what the technology *is*, the problem it solves, the one or two things that make it different from the obvious alternatives, and where it fits / does not fit. A reader who only reads this paragraph should leave with a correct mental model.
 
