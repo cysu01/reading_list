@@ -71,7 +71,11 @@ End every report with a `## Sources` section listing every web reference consult
 ## Working Conventions in This Repo
 
 - The repo is a personal reading list of technical reports. Existing top-level folders group reports by domain (e.g. `storages/`). Add new folders for new domains as needed (`ai/`, `networking/`, `databases/`, etc.).
-- **One file per technology.** Save reports as `<area>/<tech_name>.md` (e.g. `storages/juicefs.md`, `ai/vllm.md`). Do not bury reports inside other documents.
+- **Two files per technology — English and Traditional Chinese.** Every report ships as a pair:
+  - `<area>/<tech_name>-EN.md` — the English version.
+  - `<area>/<tech_name>-TW.md` — the Traditional Chinese (zh-TW) version.
+  Write the English version first, then produce the Traditional Chinese version as a faithful translation that keeps the same structure, tables, Mermaid diagrams, and source list. Technical terms (RoPE, FlashAttention, KV cache, S3, POSIX, etc.) stay in English; surrounding prose, headings, and explanations are translated. Do not paraphrase into Simplified Chinese — use Traditional Chinese characters and Taiwan terminology conventions.
+  Keep the two files in sync: if you edit one, update the other in the same change.
 - Prefer editing an existing report when the topic overlaps rather than creating a parallel one.
 - Do not create README, index, or summary files unless explicitly asked.
 
@@ -98,4 +102,4 @@ Always **research the web first, then think, then write.** Do not write a report
 
 4. **Draft.** Write the report in the three-part structure above. Never skip the summary, the table, or the trailing `## Sources` section. Cite version and date for any factual claim that could go stale.
 
-5. **Save** to the appropriate `<area>/<tech_name>.md` path.
+5. **Save** to the appropriate `<area>/<tech_name>-EN.md` path, then produce the Traditional Chinese translation at `<area>/<tech_name>-TW.md`. Both files must exist before the task is complete.
