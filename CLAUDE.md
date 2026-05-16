@@ -52,7 +52,6 @@ After the table, write the long-form section. This is where senior engineers act
 7. **Ecosystem & integrations** — Kubernetes/CSI, cloud marketplaces, backup/DR for storage; framework support (PyTorch, vLLM, Triton, LangChain, etc.), hyperscaler equivalents for AI.
 8. **Sub-comparisons where useful** — when one head-to-head deserves its own table (a specific protocol, feature, or workload), add a scoped second table.
 9. **When to pick it / when not to** — bulleted decision criteria. Be specific about workload shape, scale, team size, and budget.
-10. **Closing TL;DR** — one short paragraph a reader can quote in a design doc.
 
 ### 4. Sources
 
@@ -94,7 +93,7 @@ Always **research the web first, then think, then write.** Do not write a report
    Prefer primary sources (project docs, vendor whitepapers, maintainer talks, peer-reviewed papers) over secondary summaries. Note the URL and date for any number or claim you intend to cite.
 
 3. **Think.** Before writing, take a step back and reason through:
-   - What is the **single most important differentiator** of this technology vs. its peers? That belongs in the TL;DR.
+   - What is the **single most important differentiator** of this technology vs. its peers? 
    - Which **dimensions** in the comparison table actually separate the contenders, and which are noise to drop?
    - What are the **non-obvious trade-offs** a senior engineer would miss from skimming the marketing site? Those drive the in-depth section.
    - Where is the **information stale or contested** across sources? Flag that explicitly in the report rather than picking one and hiding the disagreement.
