@@ -4,7 +4,7 @@
 
 OpenCode is an open-source (MIT), terminal-first AI coding agent maintained by the **SST team** (the entity now operating as Anomaly Innovations, repo `sst/opencode` → `anomalyco/opencode`). It does what Claude Code, Aider, and the former Gemini CLI do — read, edit, and run code in your repo from an agentic loop — but its defining choice is a **client/server split with a fully provider-agnostic model layer**: a long-lived server (TypeScript on Bun, Hono HTTP API + SSE) holds session state and drives the agent loop, while the TUI is just one of several clients (desktop app, IDE extension, CI runner, or any SDK/HTTP caller). Because model access goes through a `models.dev`/AI-SDK abstraction, you point it at Anthropic, OpenAI, Google, OpenRouter, Bedrock, GitHub Copilot, or a local Ollama model with equal ease — there is no single-vendor lock-in, which is the one thing Claude Code structurally cannot offer. It fits teams that want one agent across many models, remote/headless workflows (`opencode serve`, `opencode run`), and a committable `AGENTS.md` convention; it fits less well if you want a vendor-tuned, batteries-included experience with first-party model alignment and the deepest reasoning integration, where Claude Code still leads. Note the naming lineage carefully — this is *not* charmbracelet's "Crush," which split from the same origin in mid-2025.
 
-> Versions/dates as of **May 2026**: OpenCode is MIT-licensed, ~150K GitHub stars, first released June 2025. The TUI began on Go + Bubble Tea and has since migrated to the team's in-house **OpenTUI** (a Zig core with TypeScript/SolidJS bindings); some third-party write-ups still describe it as "a Go CLI" — treat that as stale. GitHub added official OpenCode support via Copilot subscriptions in January 2026. Google retired the comparison peer **Gemini CLI** at I/O on 2025-05-19, succeeded by **Antigravity CLI** (Gemini CLI stops serving ~2026-06-18). Cost figures below are model-API estimates, not OpenCode license fees (there are none).
+> Versions/dates as of **May 2026**: OpenCode is MIT-licensed, **150K+ GitHub stars** (exact count varies by source, stale-prone), first publicly launched June 2025, currently shipping **v1.15.x** (v1.15.12, 2026-05-28) at a cadence of multiple releases per week. The TUI is still **Go + Bubble Tea** in production; a migration to the team's in-house **OpenTUI** (a Zig core with TypeScript bindings) is *planned/PoC* per issue #2956 — not yet shipped, so reviews that already call it "Ink/TypeScript" are premature, and ones that call it "a Go CLI" are describing the server/CLI inaccurately (the CLI/server are TypeScript on Bun; only the TUI binary is Go). GitHub added official OpenCode support via Copilot subscriptions in January 2026. Google retired the comparison peer **Gemini CLI** at I/O on 2025-05-19, succeeded by **Antigravity CLI** (Gemini CLI stops serving ~2026-06-18). Cost figures below are model-API estimates, not OpenCode license fees (there are none).
 
 ## Feature & Comparison Table
 
@@ -13,7 +13,7 @@ OpenCode is an open-source (MIT), terminal-first AI coding agent maintained by t
 | **Type / category** | TUI + client/server coding agent | TUI/CLI coding agent | CLI pair-programming agent | CLI coding agent |
 | **Maker** | SST team / Anomaly Innovations | Anthropic | Paul Gauthier + community | Google |
 | **Core architecture** | Bun/TypeScript server (Hono, SSE) + detachable clients (TUI, desktop, IDE, SDK) | Single agent process, Anthropic-tuned harness | Single Python process, git-centric edit loop | Single agent process |
-| **Language / runtime** | TS on Bun (server); OpenTUI (Zig + TS/SolidJS) for TUI | TS/Node | Python | TS/Node |
+| **Language / runtime** | TS on Bun (server/CLI); **Go + Bubble Tea** TUI today (OpenTUI/Zig migration planned) | TS/Node | Python | TS/Node |
 | **Model / provider support** | **Provider-agnostic, 75+ providers** via models.dev/AI SDK; local via Ollama | **Anthropic Claude only** | Any LLM via LiteLLM | Google Gemini (+ some others in Antigravity) |
 | **Model lock-in** | None — bring any key or run local | Vendor-locked to Claude | None | Google-centric |
 | **Headless / non-interactive** | `opencode run`, `opencode serve` (remote) | `claude -p` / print mode | scriptable / `--message` | scriptable |
@@ -35,7 +35,7 @@ Most terminal coding agents are a single process: the UI, the agent loop, the to
 ```mermaid
 flowchart LR
     subgraph Clients
-        TUI[TUI client<br/>OpenTUI]
+        TUI[TUI client<br/>Go + Bubble Tea]
         DESK[Desktop app]
         IDE[IDE extension]
         SDK[SDK / HTTP / CI]
@@ -58,10 +58,10 @@ flowchart LR
     PROV -->|any provider| EXT[(Anthropic / OpenAI /<br/>Google / OpenRouter /<br/>Bedrock / Copilot / Ollama)]
 ```
 
-- **Server.** A persistent process (`opencode serve`) written in TypeScript on the **Bun** runtime, exposing an HTTP API via the **Hono** framework and streaming real-time events over **Server-Sent Events**. It owns the agent loop, tool execution, and session state. Because state lives server-side, **sessions survive terminal disconnects, SSH drops, and laptop sleep** — you reconnect and resume. This is the structural feature single-process agents cannot match.
+- **Server.** A persistent process (`opencode serve`) written in TypeScript on the **Bun** runtime, exposing an HTTP API (default port **4096**) and streaming real-time events over **Server-Sent Events**, with session persistence in **SQLite (Drizzle ORM)**. It owns the agent loop, tool execution, and session state, and exposes routes like `/session`, `/provider`, `/mcp`, `/lsp`, `/event` (SSE), `/file`. Because state lives server-side, **sessions survive terminal disconnects, SSH drops, and laptop sleep** — you reconnect and resume. This is the structural feature single-process agents cannot match.
 - **Clients.** The TUI is the primary client but not the only one: the same server backs a desktop app (beta), IDE extensions, GitHub Actions / GitLab CI runners, and any program using the JS/TS SDK or raw HTTP. "`opencode serve` on a box, SDK client from your laptop" is a supported remote-dev pattern.
-- **TUI implementation — a moving target.** OpenCode's TUI originally used **Go + Bubble Tea** (its charm-adjacent origin; see §2). It has since migrated to the team's own **OpenTUI**, a native terminal-UI core written in **Zig** with **TypeScript/SolidJS** bindings for reactive, event-driven rendering. Independent reviews that still call OpenCode "a Go CLI" are describing the older state; verify against the current repo.
-- **Model layer.** Provider access is abstracted through **models.dev** + the AI SDK, so adding a provider is config, not code. This is what makes "75+ providers" real rather than marketing — the same agent loop runs against Claude, GPT, Gemini, OpenRouter-routed models, Bedrock, Copilot-subscription models, or a local Ollama endpoint.
+- **TUI implementation — a moving target.** OpenCode's TUI is a **Go + Bubble Tea** binary (its charm-adjacent origin; see §2) that the TypeScript CLI spawns after bootstrapping the server. As of May 2026 the Go TUI is still the production default. A migration to the team's own **OpenTUI** — a native terminal-UI core written in **Zig** with TypeScript bindings — is laid out in issue #2956 but remains *planned/PoC*, with a Go-TUI fallback during transition. So reviews that already describe an "Ink/TypeScript TUI" are premature, and ones calling the whole thing "a Go CLI" mislabel the server/CLI (those are TypeScript on Bun).
+- **Model layer.** Provider access is abstracted through the **Models.dev** catalog + the **Vercel AI SDK**, so adding a provider is config, not code, and models are referenced as `providerID/modelID`. This is what makes "75+ providers" real rather than marketing — the same agent loop runs against Claude, GPT, Gemini, OpenRouter-routed models, Bedrock, Copilot-subscription models, the vendor's own **OpenCode Zen** pay-as-you-go service, or a local Ollama endpoint.
 
 ### 2. The naming lineage — get this right
 
@@ -93,7 +93,7 @@ Go install, Docker, and from-source are also supported.
 opencode auth login
 ```
 
-Credentials are stored locally in `~/.local/share/opencode/auth.json`. You can authenticate with raw API keys for any provider, or reuse a subscription — **Anthropic Claude Pro/Max** and, since Jan 2026, a **GitHub Copilot** subscription are both usable as the model backend.
+Credentials are stored locally in `~/.local/share/opencode/auth.json`. You can authenticate with raw API keys for any provider, or via browser **OAuth** for providers that support it (in-TUI `/connect`). Subscriptions can be reused as the backend — a **GitHub Copilot** subscription has official support since Jan 2026, and **Anthropic Claude Pro/Max** sign-in is offered, though reusing subscription tokens leans on community OAuth plugins and sits in a ToS grey area (Anthropic scopes subscription tokens to official clients) — verify before relying on it.
 
 **Run it.** From inside a repo:
 
@@ -134,7 +134,8 @@ opencode serve     # start a remote server; drive it from the SDK/HTTP
 
 ### 5. Honest weaknesses
 
-- **Churn from the rewrite.** The Go-TUI → OpenTUI (Zig/TS) migration means documentation, blog posts, and muscle memory drift; third-party guides frequently describe an older architecture. Expect the fastest-moving surface of the four tools here.
+- **Release churn.** Multiple releases per week (v1.15.7→v1.15.12 across one week of May 2026) means features reportedly break between versions, and the in-flight Go-TUI → OpenTUI migration adds instability risk. Documentation, blog posts, and muscle memory drift; third-party guides frequently describe an older or premature architecture. Expect the fastest-moving surface of the four tools here.
+- **Resource use.** Reports of 1 GB+ RAM for the TUI, CPU spikes, and occasional hung sessions appear in GitHub issues. Note also that some of the harshest critiques (runaway token billing, telemetry-for-title-generation) target the third-party "Oh My Opencode" config layer, *not* core OpenCode — don't conflate the two.
 - **Lineage confusion.** The Crush/OpenCode split actively misleads users and search results; onboarding teammates requires explaining which project you mean.
 - **Operational surface.** A persistent Bun server plus clients is more moving parts than a single binary; remote/headless power comes with more to run and secure (the server speaks HTTP — mind exposure).
 - **Provider quirks.** Provider-agnosticism is real but uneven: prompt-tuning, tool-call reliability, and context handling vary by model, and you inherit each provider's rough edges rather than a single vendor-tuned path.
